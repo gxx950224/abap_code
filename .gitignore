@@ -1,0 +1,4 @@
+node_modules/
+.attempt-counter.json
+output/
+.DS_Store

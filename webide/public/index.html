@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABAP Code Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶栏 -->
+  <header id="topbar">
+    <div class="logo">ABAP <span>Code Studio</span></div>
+    <div class="status-item" id="sap-status" title="SAP 连接状态">
+      <span class="dot" id="sap-dot"></span><span id="sap-text">SAP 检测中…</span>
+    </div>
+    <div class="status-item" id="agent-status" title="PI Agent 会话状态">
+      <span class="dot" id="agent-dot"></span><span id="agent-text">Agent 连接中…</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="status-item" id="model-info" title="当前模型"></div>
+    <button id="theme-toggle" title="切换主题">深色 / 浅色</button>
+  </header>
+
+  <!-- 主区 -->
+  <div id="main">
+
+    <!-- 左栏 -->
+    <aside class="sidebar left">
+      <div class="side-section">
+        <button id="new-chat-btn" class="new-chat">+ 新建对话</button>
+        <button id="history-toggle" class="history-toggle">历史对话 <span class="caret">▸</span></button>
+        <div id="history-panel">
+          <div id="session-list"><div class="empty-hint">加载中…</div></div>
+        </div>
+      </div>
+      <div class="side-section">
+        <h3>快捷指令</h3>
+        <button class="cmd-card" data-cmd="/abap-report ">
+          <div class="cmd-name">/abap-report</div>
+          <div class="cmd-desc">开发一个 ABAP 报表（带门禁流程）</div>
+        </button>
+        <button class="cmd-card" data-cmd="/abap-function ">
+          <div class="cmd-name">/abap-function</div>
+          <div class="cmd-desc">开发一个函数模块（带门禁流程）</div>
+        </button>
+        <button class="cmd-card" data-fill="审查代码 ">
+          <div class="cmd-name">审查代码</div>
+          <div class="cmd-desc">MCP 下载源码 → 生成 HTML 审查报告</div>
+        </button>
+        <button class="cmd-card" data-fill="查看最近的 DUMP 并分析原因">
+          <div class="cmd-name">DUMP 分析</div>
+          <div class="cmd-desc">abap_dump 排查程序崩溃</div>
+        </button>
+      </div>
+      <div class="side-section">
+        <h3>output 目录 <button id="refresh-files" style="float:right;font-size:11px;padding:1px 8px;">刷新</button></h3>
+        <div id="file-list"><div class="empty-hint">暂无文件</div></div>
+      </div>
+    </aside>
+
+    <!-- 中栏：对话 -->
+    <section id="chat">
+      <div id="messages">
+        <div class="msg system-note">ABAP Code Studio — 与 PI Agent 对话开始 ABAP 开发。同一套 17 个 abap 工具 + 昇兴规范。</div>
+      </div>
+      <div id="input-area">
+        <div id="input-wrap">
+          <textarea id="input" rows="2" placeholder="描述你的需求（Enter 发送，Shift+Enter 换行）"></textarea>
+          <button id="send-btn" class="primary">发送</button>
+        </div>
+        <div id="input-hint">Enter 发送 · Shift+Enter 换行 · 生成中可点击「停止」中断</div>
+      </div>
+    </section>
+
+    <!-- 右栏：状态 -->
+    <aside class="sidebar right">
+      <div class="side-section">
+        <h3>会话状态</h3>
+        <div class="stat-row"><span class="k">模型</span><span class="v" id="st-model">-</span></div>
+        <div class="stat-row"><span class="k">思考级别</span><span class="v" id="st-thinking">-</span></div>
+        <div class="stat-row"><span class="k">状态</span><span class="v" id="st-streaming">-</span></div>
+        <div class="stat-row"><span class="k">消息数</span><span class="v" id="st-msgcount">-</span></div>
+        <div class="stat-row"><span class="k">会话 ID</span><span class="v" id="st-session" title="">-</span></div>
+      </div>
+      <div class="side-section">
+        <h3>已加载工具</h3>
+        <div id="st-tools"></div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- 文件预览弹层 -->
+<div id="preview-overlay">
+  <div id="preview-dialog">
+    <div id="preview-header">
+      <span id="preview-title">文件预览</span>
+      <span class="spacer"></span>
+      <a id="preview-download" href="#" download title="下载文件"><button>下载</button></a>
+      <button id="preview-close">关闭 Esc</button>
+    </div>
+    <pre id="preview-body">加载中…</pre>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
