@@ -118,7 +118,7 @@ async function attachSession(newSession) {
         console.log(`[webide] ★ 拦截 bash+gxx-abap: ${cmd.slice(0, 80)}`);
         broadcast({
           kind: "error",
-          error: "[系统拦截] 禁止用 bash 执行 gxx-abap 命令（会导致 CMD 弹窗）。请使用 abap_* 系列工具（abap_run / abap_ls / abap_put 等）。",
+          error: "[系统拦截] 禁止用 bash 执行 gxx-abap。如果是因为输出截断或工具报错想绕过去，请直接告诉用户你遇到了什么问题，让用户来指导。",
           ts: Date.now(),
         });
         // 尝试中断 agent，防止继续执行

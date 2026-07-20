@@ -864,8 +864,8 @@ document.querySelectorAll(".cmd-card").forEach((btn) => {
   btn.addEventListener("click", () => {
     const cmd = btn.dataset.cmd || btn.dataset.fill || "";
     inputEl.value = cmd;
-    inputEl.focus();
     autoGrow();
+    sendMessage();
   });
 });
 

@@ -314,15 +314,27 @@ export default function (pi: ExtensionAPI) {
 
 如果你违反这条规则，每次 bash 调用都会弹出一个 CMD 黑色窗口，严重影响用户体验。
 
+### 输出截断时的处理
+
+abap_meta 查大表（如 MARC 有 242 字段）或 abap_run transport list 时输出可能被截断。遇到截断时：
+
+- meta 用 --field 过滤具体字段名，不要拉全量
+- 工具连续失败 3 次后立即停手，把问题和已尝试方案发给用户，不要反复重试
+- 绝对不要因为输出截断就改用 bash 绕过去
+
 ### 读取源码
 
 读取 SAP ABAP 源码用 abap_cat，禁止使用 mcp__sap-mcp-dev__ABAP_DOWNLOAD（仅在代码审查/审计场景才用 MCP 下载）。
+
+查表字段用 abap_meta。大表字段多时用 --field 过滤（如 abap_meta MARC --field PMATN），避免全量输出截断。
 
 ### 写入代码
 
 修改单个对象时，gxx-abap 自动检测已有的传输号，直接 abap_put 即可。
 
 多对象要放同一个请求时，必须问用户要传输号，然后每个对象都传 --transport 同一个号，否则每个对象会各建各的传输请求。
+
+激活报错时，只修复本次改动引入的错误。原程序已有的 Bug 不要擅自修改，告知用户即可。
 `;
     const newSystemPrompt = (event.systemPrompt || "") + globalInject;
 
