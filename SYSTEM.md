@@ -294,6 +294,7 @@ LOOP AT t100. IF t100-msgno > lv_max. lv_max = t100-msgno. ENDIF. ENDLOOP.
 - ❌ 禁止 SELECT *
 - ❌ 禁止循环内 SELECT SINGLE
 - ❌ 禁止 FOR ALL ENTRIES 前不检查非空
+- ❌ 禁止 SELECT 全表取数（应用 WITH +DATA 从已有内表取 distinct key 再 JOIN）
 - ❌ 禁止修改 SAP 标准对象
 - ❌ 禁止 COMMIT WORK 在 BADI/增强中
 - ❌ 禁止硬编码断点和测试输出到生产

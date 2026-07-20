@@ -24,7 +24,7 @@ agent_created: true
 3. **修改已有对象流程** — `abap_cat` 读源码 → 修改本地文件 → `abap_put` 写入 → `abap_activate` 激活。
 4. **排查故障用 `abap_dump`** — 程序 DUMP 后调用 `abap_dump` 查详情，定位出错行。
 5. **文本元素格式** — selections/headings 无 MaxLength 头，每行 `KEY  =VALUE`（等号前空格补齐对齐）。symbols 首行必须 `@MaxLength:N`，后续 `KEY=VALUE`（单等号）。symbols 只支持更新已存在条目，不能新建。
-6. **传输号自动检测** — `abap_put` 会自动查询对象已有的传输号并关联，无需手动指定 `--transport`。仅在自动检测失败时才向用户索要。
+6. **传输号自动检测** — 单对象时 `abap_put` 自动查已有传输号。多对象要放同一请求时必须问用户要传输号，每个对象都传 `--transport <同一个号>`，否则各自新建。
 7. **查表字段用 `abap_meta` 不用 `abap_cat`** — `abap_meta` 返回结构化字段列表；`abap_cat -t table` 只返回表头定义源码。
 8. **涉及修改写入的命令必须向用户确认** — 特别是 `abap_create`、`abap_put`、`abap_texts`（写入模式）、`abap_activate`，执行前展示变更概要并获得明确许可。
 9. **通用兜底：用 `abap_run`** — 当没有对应专用工具时（如新命令），用 `abap_run -command "..."` 执行任意 `gxx-abap` 命令。所有命令自动加 `--json`。

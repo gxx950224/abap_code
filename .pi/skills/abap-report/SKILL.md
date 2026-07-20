@@ -178,6 +178,27 @@ IF lt_vbak IS NOT INITIAL.
 ENDIF.
 ```
 
+### 从已取数据批量补字段（WITH +DATA，禁止全表 SELECT）
+
+已取到 GT_ALV 后需要补其他表的字段时，**禁止 SELECT * FROM 全表**。
+必须先从 GT_ALV 取 distinct key，再 JOIN 目标表：
+
+```abap
+" 错误 — 全表取数
+SELECT kunnr, name1 FROM kna1 INTO TABLE @DATA(lt_kna1).
+SORT lt_kna1 BY kunnr.
+
+" 正确 — 只取 GT_ALV 里有的 key
+WITH +DATA AS ( SELECT DISTINCT kunnr FROM @gt_alv AS a )
+  SELECT a~kunnr, b~name1
+    FROM +data AS a
+    INNER JOIN kna1 AS b ON a~kunnr = b~kunnr
+    INTO TABLE @DATA(lt_kna1).
+SORT lt_kna1 BY kunnr.
+```
+
+同样适用于 LOOP 中 READ TABLE 取描述的场景。
+
 ## 输出格式
 
 ### 导出 CSV（应用服务器）

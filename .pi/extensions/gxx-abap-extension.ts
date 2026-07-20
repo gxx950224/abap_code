@@ -320,9 +320,9 @@ export default function (pi: ExtensionAPI) {
 
 ### 写入代码
 
-gxx-abap 会自动检测对象已有的传输号并关联写入。直接用 abap_put 即可，无需手动指定传输号。
+修改单个对象时，gxx-abap 自动检测已有的传输号，直接 abap_put 即可。
 
-如果写入时报传输相关错误，再向用户索要 --transport 参数。
+多对象要放同一个请求时，必须问用户要传输号，然后每个对象都传 --transport 同一个号，否则每个对象会各建各的传输请求。
 `;
     const newSystemPrompt = (event.systemPrompt || "") + globalInject;
 
