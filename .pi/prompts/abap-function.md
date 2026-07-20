@@ -69,6 +69,7 @@ abap_meta -name <表名>
 ⚠ 用户确认后才能写入 SAP。
 
 ### 7. 写入 SAP
+gxx-abap 会自动检测传输号，无需手动指定 --transport。
 ```
 abap_put -path <函数模块名> -file output/<函数模块名>.abap -t fm
 abap_activate -path <函数模块名> -t fm

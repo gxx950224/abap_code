@@ -105,9 +105,39 @@ async function createResourceLoader() {
   return loader;
 }
 
+// 全局确认等待队列（server + extension 共享）
+globalThis.__pendingConfirmations = new Map();
+
 async function attachSession(newSession) {
   session = newSession;
   session.subscribe((event) => {
+    // 拦截 bash + gxx-abap — 防止 WSL 跨进程调用弹出 DOS 窗口
+    if (event.type === "tool_execution_start" && event.toolName === "bash") {
+      const cmd = event.args?.command || "";
+      if (/gxx-abap|npx.*gxx/i.test(cmd)) {
+        console.log(`[webide] ★ 拦截 bash+gxx-abap: ${cmd.slice(0, 80)}`);
+        broadcast({
+          kind: "error",
+          error: "[系统拦截] 禁止用 bash 执行 gxx-abap 命令（会导致 CMD 弹窗）。请使用 abap_* 系列工具（abap_run / abap_ls / abap_put 等）。",
+          ts: Date.now(),
+        });
+        // 尝试中断 agent，防止继续执行
+        try { session.agent?.abort?.(); } catch {}
+        return;
+      }
+    }
+    // 拦截 ask_user_confirmation，广播特殊事件给前端渲染确认卡片
+    if (event.type === "tool_execution_start" && event.toolName === "ask_user_confirmation") {
+      broadcast({
+        kind: "user_confirmation",
+        toolCallId: event.toolCallId,
+        question: event.args?.question || "",
+        options: event.args?.options || ["是", "否"],
+        allowCustom: event.args?.allow_custom === true,
+        ts: Date.now(),
+      });
+      return;
+    }
     broadcast({ kind: "agent", event, ts: Date.now() });
   });
 }
@@ -496,6 +526,36 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 500, { success: false, error: e2?.message || String(e2) });
         }
       }
+      sendJson(res, 200, { success: true });
+      return;
+    }
+
+    // ---------- 用户确认响应 ----------
+    if (pathname === "/api/confirm" && req.method === "POST") {
+      const body = await readBody(req);
+      const toolCallId = String(body.toolCallId || "");
+      const choice = String(body.choice || "");
+      const customText = String(body.custom_text || "");
+
+      if (!toolCallId || !choice) {
+        return sendJson(res, 400, { success: false, error: "缺少 toolCallId 或 choice" });
+      }
+
+      const pending = globalThis.__pendingConfirmations?.get(toolCallId);
+      if (!pending) {
+        return sendJson(res, 404, { success: false, error: "确认请求已过期或不存在" });
+      }
+
+      const result = choice === "__custom__"
+        ? { choice: "自定义", custom_text: customText }
+        : { choice };
+
+      pending.resolve({
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      });
+
+      globalThis.__pendingConfirmations.delete(toolCallId);
       sendJson(res, 200, { success: true });
       return;
     }

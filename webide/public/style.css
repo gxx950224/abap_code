@@ -601,6 +601,81 @@ button.primary:hover { background: var(--bg-hover); }
   margin: 0;
 }
 
+/* 用户确认卡片 */
+.confirm-card {
+  align-self: flex-start;
+  max-width: 480px;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-dim);
+  border-radius: 10px;
+  padding: 14px 16px;
+  animation: confirmSlideIn 0.25s ease;
+}
+@keyframes confirmSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.confirm-card.resolved {
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.confirm-question {
+  font-size: 13.5px;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.confirm-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.confirm-btn {
+  padding: 6px 20px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.confirm-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.confirm-btn.selected {
+  background: var(--accent-dim);
+  color: #fff;
+  opacity: 1;
+}
+.confirm-custom-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+.confirm-custom-input:focus {
+  border-color: var(--accent-dim);
+}
+.confirm-custom-input:disabled {
+  opacity: 0.4;
+}
+.confirm-custom-input.selected {
+  border-color: var(--accent-dim);
+  background: var(--bg-panel-2);
+}
+
 /* 滚动条 */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; }

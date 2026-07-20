@@ -50,6 +50,8 @@ abap_cat -path <程序名> -t program           # 修改时读现有源码
 ⚠ 用户确认后才能写入 SAP。
 
 ### 7. 写入 SAP
+gxx-abap 会自动检测传输号，无需手动指定 --transport。
+
 新建：
 ```
 abap_create -name <程序名> -t program --description "<描述>" --package <包>

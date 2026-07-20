@@ -291,6 +291,94 @@ function finishToolCard(id, resultContent, isError) {
 // ============================================================
 // SSE 事件处理
 // ============================================================
+// ============================================================
+// 用户确认卡片
+// ============================================================
+function renderConfirmation(payload) {
+  const id = payload.toolCallId;
+  const question = payload.question || "确认？";
+  const options = payload.options || ["是", "否"];
+  const allowCustom = payload.allowCustom === true;
+
+  // 移除该 id 的旧卡片（如有）
+  const old = document.querySelector(`.confirm-card[data-cid="${CSS.escape(id)}"]`);
+  if (old) old.remove();
+
+  const card = document.createElement("div");
+  card.className = "confirm-card";
+  card.dataset.cid = id;
+
+  const q = document.createElement("div");
+  q.className = "confirm-question";
+  q.textContent = question;
+  card.appendChild(q);
+
+  const btns = document.createElement("div");
+  btns.className = "confirm-btns";
+
+  let customInput = null;
+  const disableAll = (selected) => {
+    btns.querySelectorAll("button").forEach((b) => {
+      b.disabled = true;
+      b.classList.toggle("selected", b.dataset.choice === selected);
+    });
+    if (customInput) {
+      if (selected !== "__custom__") customInput.disabled = true;
+      else customInput.classList.add("selected");
+    }
+  };
+
+  for (const opt of options) {
+    const btn = document.createElement("button");
+    btn.className = "confirm-btn";
+    btn.textContent = opt;
+    btn.dataset.choice = opt;
+    btn.addEventListener("click", async () => {
+      disableAll(opt);
+      await sendConfirmation(id, opt);
+    });
+    btns.appendChild(btn);
+  }
+
+  if (allowCustom) {
+    customInput = document.createElement("input");
+    customInput.className = "confirm-custom-input";
+    customInput.type = "text";
+    customInput.placeholder = "输入自定义内容…";
+    customInput.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter" && customInput.value.trim()) {
+        disableAll("__custom__");
+        await sendConfirmation(id, "__custom__", customInput.value.trim());
+      }
+    });
+    btns.appendChild(customInput);
+  }
+
+  card.appendChild(btns);
+
+  const msgs = document.getElementById("messages");
+  msgs.appendChild(card);
+  scrollToBottom();
+}
+
+async function sendConfirmation(toolCallId, choice, customText) {
+  try {
+    await fetch("/api/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ toolCallId, choice, custom_text: customText || "" }),
+    });
+  } catch (e) {
+    console.error("[ABAP Studio] 确认发送失败:", e);
+  }
+  // 3 秒后淡出卡片
+  const card = document.querySelector(`.confirm-card[data-cid="${CSS.escape(toolCallId)}"]`);
+  if (card) {
+    card.classList.add("resolved");
+    setTimeout(() => card.remove(), 3000);
+  }
+}
+
 function connectEvents() {
   if (state.es) state.es.close();
   const es = new EventSource("/api/events");
@@ -306,6 +394,8 @@ function connectEvents() {
     for (const payload of batch) {
       if (payload.kind === "agent") {
         handleAgentEvent(payload.event);
+      } else if (payload.kind === "user_confirmation") {
+        renderConfirmation(payload);
       } else if (payload.kind === "session_reset") {
         clearChat();
         loadHistory();

@@ -295,10 +295,41 @@ export default function (pi: ExtensionAPI) {
   // 审查代码强制规则拦截器
   // 检测"审查/审计/code review"关键词，在 system prompt 注入强制指令
   // ----------------------------------------------------------
+  // ----------------------------------------------------------
+  // 全局 bash+gxx-abap 禁令 — 每次对话都注入
+  // ----------------------------------------------------------
   pi.on("before_agent_start", (event, _ctx) => {
+    // 全局注入：禁止用 bash 跑 gxx-abap（会导致 DOS 弹窗）
+    const globalInject = `
+
+---
+
+## 【全局铁律 — 每次对话强制执行】
+
+**绝对禁止用 bash 执行 gxx-abap 命令。** 这会触发 WSL → Windows 跨进程调用，弹出大量 CMD 窗口。
+
+所有 SAP 操作必须用 abap_* 工具（abap_ls / abap_cat / abap_put / abap_create / abap_activate / abap_meta / abap_run 等）。
+
+即使用 abap_run 工具也绝不用 bash + npx gxx-abap。
+
+如果你违反这条规则，每次 bash 调用都会弹出一个 CMD 黑色窗口，严重影响用户体验。
+
+### 读取源码
+
+读取 SAP ABAP 源码用 abap_cat，禁止使用 mcp__sap-mcp-dev__ABAP_DOWNLOAD（仅在代码审查/审计场景才用 MCP 下载）。
+
+### 写入代码
+
+gxx-abap 会自动检测对象已有的传输号并关联写入。直接用 abap_put 即可，无需手动指定传输号。
+
+如果写入时报传输相关错误，再向用户索要 --transport 参数。
+`;
+    const newSystemPrompt = (event.systemPrompt || "") + globalInject;
+
+    // 审查场景额外注入
     const prompt = event.prompt || "";
     const reviewKeywords = /审查|审计|code\s*review|review|检查.*代码|看看.*代码.*问题/i;
-    if (!reviewKeywords.test(prompt)) return;
+    if (!reviewKeywords.test(prompt)) return { systemPrompt: newSystemPrompt };
 
     const inject = `
 
@@ -317,7 +348,7 @@ export default function (pi: ExtensionAPI) {
 
 **如果你调用了 abap_ls 或 abap_cat，你违反了强制规则。**
 `;
-    return { systemPrompt: event.systemPrompt + inject };
+    return { systemPrompt: newSystemPrompt + inject };
   });
 
   // ----------------------------------------------------------
@@ -442,12 +473,14 @@ export default function (pi: ExtensionAPI) {
       path: Type.String({ description: "目标对象名" }),
       type: Type.Optional(Type.String({ description: "对象类型: program/class/interface/fm" })),
       file: Type.String({ description: "源码文件路径" }),
+      transport: Type.Optional(Type.String({ description: "传输任务号（修改已绑传输的对象时需要）" })),
     }),
     async execute(_toolCallId, params, signal) {
       safetyGuard(params.path, "写入");
       checkFailureLimit(params.path);
       let cmd = `put ${params.path} ${params.file}`;
       if (params.type) cmd += ` -t ${params.type}`;
+      if (params.transport) cmd += ` --transport ${params.transport}`;
       try {
         const result = await runAbap(pi, cmd, signal);
         if (!result.success) {
@@ -833,5 +866,61 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  console.log("[gxx-abap] 17 个工具已注册");
+  // ----------------------------------------------------------
+  // 18. ask_user_confirmation — 向用户确认（是/否/自定义）
+  // ----------------------------------------------------------
+  pi.registerTool({
+    name: "ask_user_confirmation",
+    label: "用户确认",
+    description:
+      "需要用户确认时使用。向用户显示问题及选项，等待选择后继续。\n" +
+      "参数：question=问题文字, options=选项数组(默认['是','否']), allow_custom=是否允许用户自由输入。\n" +
+      "用户选择后返回 {choice: '选项文字'} 或 {choice: '自定义', custom_text: '用户输入'}。",
+    parameters: Type.Object({
+      question: Type.String({ description: "确认问题，如：'是否继续创建该对象？'" }),
+      options: Type.Optional(Type.Array(Type.String(), { description: "选项列表，默认 ['是', '否']" })),
+      allow_custom: Type.Optional(Type.Boolean({ description: "是否允许用户输入自定义内容" })),
+    }),
+    async execute(toolCallId, params, signal) {
+      const opts = params.options?.length ? params.options : ["是", "否"];
+      const allowCustom = params.allow_custom === true;
+
+      return new Promise((resolve, reject) => {
+        const cleanup = () => {
+          if (globalThis.__pendingConfirmations?.has(toolCallId)) {
+            globalThis.__pendingConfirmations.delete(toolCallId);
+          }
+        };
+
+        // Agent 中止时清理
+        if (signal) {
+          if (signal.aborted) {
+            cleanup();
+            resolve({
+              content: [{ type: "text", text: "用户取消了确认" }],
+              details: { aborted: true },
+            });
+            return;
+          }
+          signal.addEventListener("abort", () => {
+            cleanup();
+            resolve({
+              content: [{ type: "text", text: "用户取消了确认" }],
+              details: { aborted: true },
+            });
+          }, { once: true });
+        }
+
+        globalThis.__pendingConfirmations?.set(toolCallId, {
+          question: params.question,
+          options: opts,
+          allowCustom,
+          resolve,
+          reject,
+        });
+      });
+    },
+  });
+
+  console.log("[gxx-abap] 18 个工具已注册");
 }
